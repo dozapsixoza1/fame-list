@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAME LIST</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .neon {
+      text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff;
+    }
+    .card {
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px #00f2ff;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div class="max-w-6xl mx-auto p-4">
+    <h1 class="text-4xl font-bold neon text-center mb-8">FAME LIST</h1>
+
+    <div class="flex justify-between mb-4">
+      <input type="text" id="search" placeholder="Поиск..." class="p-2 rounded bg-gray-800 w-full max-w-md" oninput="renderCards()">
+      <select id="categoryFilter" class="ml-4 p-2 rounded bg-gray-800" onchange="renderCards()">
+        <option value="">Все категории</option>
+      </select>
+      <button class="ml-4 bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded" onclick="toggleTheme()">🌗</button>
+    </div>
+
+    <div id="cardsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+
+    <div class="mt-12 text-center">
+      <button onclick="document.getElementById('loginModal').classList.remove('hidden')"
+        class="bg-purple-600 px-6 py-2 rounded hover:bg-purple-700">Вход в админ-панель</button>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 hidden bg-black bg-opacity-70 flex items-center justify-center z-50">
+      <div class="bg-gray-800 p-6 rounded shadow-xl w-80">
+        <h2 class="text-lg mb-4 neon">Вход в панель</h2>
+        <input type="text" id="loginInput" placeholder="Логин" class="mb-2 w-full p-2 rounded bg-gray-700 text-white">
+        <input type="password" id="adminPass" placeholder="Пароль" class="mb-4 w-full p-2 rounded bg-gray-700 text-white">
+        <button onclick="login()" class="w-full bg-green-600 py-2 rounded hover:bg-green-700">Войти</button>
+        <button onclick="document.getElementById('loginModal').classList.add('hidden')"
+          class="w-full mt-2 bg-red-600 py-2 rounded hover:bg-red-700">Отмена</button>
+      </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden mt-10 bg-gray-800 p-6 rounded">
+      <h2 class="text-2xl mb-4 neon">Админ-панель</h2>
+      <form onsubmit="addCard(event)" class="space-y-4">
+        <input required type="text" id="nickname" placeholder="Никнейм" class="w-full p-2 rounded bg-gray-700">
+        <input required type="text" id="status" placeholder="Статус" class="w-full p-2 rounded bg-gray-700">
+        <textarea required id="description" placeholder="Описание" class="w-full p-2 rounded bg-gray-700"></textarea>
+        <input required type="text" id="category" placeholder="Категория (например, СКАМЕР)" class="w-full p-2 rounded bg-gray-700">
+        <input required type="url" id="channel" placeholder="Ссылка на канал" class="w-full p-2 rounded bg-gray-700">
+        <input required type="url" id="dm" placeholder="Ссылка на ЛС" class="w-full p-2 rounded bg-gray-700">
+        <input required type="file" id="image" accept="image/*" class="w-full p-2 rounded bg-gray-700">
+        <button type="submit" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Добавить карточку</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const loginName = 'Evgeniy Nemcev';
+    const loginPassword = 'nemcev2008';
+
+    function login() {
+      const name = document.getElementById('loginInput').value;
+      const pass = document.getElementById('adminPass').value;
+      if (name === loginName && pass === loginPassword) {
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+      } else {
+        alert('Неверный логин или пароль');
+      }
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('bg-gray-900');
+      document.body.classList.toggle('text-white');
+      document.body.classList.toggle('bg-white');
+      document.body.classList.toggle('text-black');
+    }
+
+    let cards = [];
+
+    async function fetchCards() {
+      const res = await fetch('/api/cards');
+      cards = await res.json();
+      renderCards();
+    }
+
+    function renderCards() {
+      const container = document.getElementById('cardsContainer');
+      const filter = document.getElementById('categoryFilter').value.toLowerCase();
+      const search = document.getElementById('search').value.toLowerCase();
+      const filtered = cards.filter(c =>
+        (!filter || c.category.toLowerCase() === filter) &&
+        (c.nickname.toLowerCase().includes(search) || c.description.toLowerCase().includes(search))
+      );
+
+      container.innerHTML = filtered.map(c => `
+        <div class="card bg-gray-800 rounded-lg p-4 shadow">
+          <div class="text-sm bg-green-500 text-black inline-block px-2 py-1 rounded mb-2">${c.category}</div>
+          <img src="${c.img}" alt="avatar" class="w-24 h-24 object-cover rounded-full mx-auto">
+          <h3 class="text-xl text-center mt-2 font-bold">${c.nickname}</h3>
+          <p class="text-green-400 text-sm text-center">${c.status}</p>
+          <p class="text-sm mt-2">${c.description}</p>
+          <div class="flex justify-center mt-2 gap-2">
+            <a href="${c.channel}" target="_blank" class="bg-blue-500 text-white px-2 py-1 rounded text-xs">Канал</a>
+            <a href="${c.dm}" target="_blank" class="bg-purple-500 text-white px-2 py-1 rounded text-xs">Написать в ЛС</a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function addCard(e) {
+      e.preventDefault();
+      const reader = new FileReader();
+      const file = document.getElementById('image').files[0];
+      reader.onloadend = async () => {
+        const newCard = {
+          nickname: document.getElementById('nickname').value,
+          status: document.getElementById('status').value,
+          description: document.getElementById('description').value,
+          category: document.getElementById('category').value,
+          img: reader.result,
+          channel: document.getElementById('channel').value,
+          dm: document.getElementById('dm').value
+        };
+        await fetch('/api/cards', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(newCard)
+        });
+        fetchCards();
+        e.target.reset();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    fetchCards();
+  </script>
+</body>
+      </html>
