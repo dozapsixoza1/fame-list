@@ -1,165 +1,222 @@
-<?php
-// db.php
-$host = "localhost";
-$dbname = "имя_базы";
-$user = "имя_пользователя";
-$pass = "пароль";
-
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
-} catch (PDOException $e) {
-    die("Ошибка подключения к БД: " . $e->getMessage());
-}
-
-// get_cards.php
-if (isset($_GET['get_cards'])) {
-    require 'db.php';
-    $stmt = $pdo->query("SELECT * FROM cards ORDER BY id DESC");
-    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-    exit;
-}
-
-// add_card.php
-if (isset($_POST['add_card'])) {
-    require 'db.php';
-    $nickname = $_POST['nickname'];
-    $status = $_POST['status'];
-    $description = $_POST['description'];
-    $stmt = $pdo->prepare("INSERT INTO cards (nickname, status, description) VALUES (?, ?, ?)");
-    $stmt->execute([$nickname, $status, $description]);
-    echo json_encode(['success' => true]);
-    exit;
-}
-
-// delete_card.php
-if (isset($_POST['delete_card'])) {
-    require 'db.php';
-    $id = $_POST['id'];
-    $stmt = $pdo->prepare("DELETE FROM cards WHERE id = ?");
-    $stmt->execute([$id]);
-    echo json_encode(['success' => true]);
-    exit;
-}
-?>
-
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Личности Комьюнити</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>FAME LIST</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap');
     body {
-      background-color: #0e0e0e;
-      color: #00f2ff;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Inter', sans-serif;
+      background: #0f111a;
+      color: white;
     }
-    .neon-text {
-      text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff;
-    }
-    .card {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    .neon {
+      text-shadow: 0 0 5px #00ffcc, 0 0 10px #00ffcc;
     }
     .card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 15px #00f2ff;
+      transform: scale(1.03);
+      transition: 0.3s;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center py-10">
-  <header class="text-3xl neon-text font-bold mb-6">ЛИЧНОСТИ КОМЬЮНИТЕ</header>
-  <nav class="flex space-x-4 mb-6 text-white">
-    <button class="bg-gray-800 px-4 py-2 rounded hover:bg-gray-700">МИДИЙНЫЕ ЛИЧНОСТИ</button>
-    <button class="bg-gray-800 px-4 py-2 rounded hover:bg-gray-700">СРЕДНИЙ ФЕЙМ</button>
-    <button class="bg-blue-800 px-4 py-2 rounded hover:bg-blue-700">МАЛЫЙ ФЕЙМ</button>
-    <button class="bg-gray-800 px-4 py-2 rounded hover:bg-gray-700">СКАМЕРЫ</button>
-  </nav>
+<body class="min-h-screen p-4 flex flex-col items-center">
 
-  <section id="cards" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full px-4 max-w-6xl"></section>
+  <h1 class="text-4xl neon mb-6">FAME LIST</h1>
 
-  <button onclick="document.getElementById('login-modal').classList.remove('hidden')"
-    class="mt-12 bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 transition">Авторизация в панель</button>
+  <!-- Фильтры -->
+  <div class="flex flex-wrap gap-2 mb-6">
+    <button onclick="filterCards('Медийные')" class="px-4 py-2 bg-green-600 rounded">Медийные личности</button>
+    <button onclick="filterCards('Средний')" class="px-4 py-2 bg-green-600 rounded">Средний фейм</button>
+    <button onclick="filterCards('Малый')" class="px-4 py-2 bg-green-600 rounded">Малый фейм</button>
+    <button onclick="filterCards('Скамеры')" class="px-4 py-2 bg-green-600 rounded">Скамеры</button>
+    <button onclick="filterCards('Товары')" class="px-4 py-2 bg-yellow-500 rounded">Товары</button>
+  </div>
 
-  <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-    <div class="bg-gray-900 p-6 rounded shadow-xl w-80">
-      <h2 class="text-lg mb-4 neon-text">Вход в панель</h2>
-      <input type="text" id="username" placeholder="Логин" class="mb-2 w-full p-2 rounded bg-gray-800 text-white">
-      <input type="password" id="password" placeholder="Пароль" class="mb-4 w-full p-2 rounded bg-gray-800 text-white">
-      <button onclick="login()" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Войти</button>
-      <button onclick="document.getElementById('login-modal').classList.add('hidden')"
-        class="w-full mt-2 bg-red-600 text-white py-2 rounded hover:bg-red-700">Отмена</button>
+  <!-- Карточки -->
+  <div id="cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-6xl"></div>
+
+  <!-- Авторизация -->
+  <button onclick="toggleLogin()" class="fixed bottom-4 right-4 px-4 py-2 bg-gray-800 text-white rounded-lg border border-green-400">Авторизация в панель</button>
+
+  <!-- Модалка карточки -->
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+    <div class="bg-[#1e2633] p-6 rounded-xl max-w-md w-full text-white relative">
+      <button onclick="closeModal()" class="absolute top-2 right-2 text-2xl">&times;</button>
+      <div class="flex flex-col items-center">
+        <img id="modalImage" src="" class="w-24 h-24 rounded-full border-4 border-green-400 mb-4" />
+        <h2 id="modalName" class="text-2xl text-green-400 font-bold mb-2"></h2>
+        <p id="modalDesc" class="text-sm text-gray-300 text-center mb-4"></p>
+        <div class="flex flex-col gap-2 w-full">
+          <a id="modalLink1" href="#" class="bg-green-600 px-4 py-2 text-center rounded">Канал</a>
+          <a id="modalLink2" href="#" class="bg-green-600 px-4 py-2 text-center rounded">Написать в лс</a>
+          <a id="modalLink3" href="#" class="bg-green-600 px-4 py-2 text-center rounded">Поделиться</a>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div id="admin-panel" class="hidden w-full max-w-xl mt-10 p-6 bg-gray-800 rounded-lg text-white">
-    <h2 class="text-2xl neon-text mb-4">Панель администратора</h2>
-    <form id="addCardForm" class="space-y-4">
-      <input type="text" name="nickname" placeholder="Никнейм" class="w-full p-2 rounded bg-gray-700">
-      <input type="text" name="status" placeholder="Статус (напр. помощник)" class="w-full p-2 rounded bg-gray-700">
-      <textarea name="description" placeholder="Описание" class="w-full p-2 rounded bg-gray-700"></textarea>
-      <button type="submit" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Добавить карточку</button>
-    </form>
+  <!-- Панель логина -->
+  <div id="loginPanel" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+    <div class="bg-[#1e2633] p-6 rounded-xl w-96 text-white relative">
+      <button onclick="toggleLogin()" class="absolute top-2 right-2 text-2xl">&times;</button>
+      <h2 class="text-xl mb-4">Вход в админ-панель</h2>
+      <input id="login" type="text" placeholder="Логин" class="w-full mb-2 p-2 rounded bg-gray-800 border border-gray-600">
+      <input id="password" type="password" placeholder="Пароль" class="w-full mb-4 p-2 rounded bg-gray-800 border border-gray-600">
+      <button onclick="checkLogin()" class="w-full bg-green-600 py-2 rounded">Войти</button>
+    </div>
+  </div>
+
+  <!-- Панель админа -->
+  <div id="adminPanel" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+    <div class="bg-[#1e2633] p-6 rounded-xl w-[90%] max-w-2xl text-white relative space-y-4">
+      <button onclick="closeAdmin()" class="absolute top-2 right-2 text-2xl">&times;</button>
+      <div class="flex gap-2">
+        <button onclick="showCardForm()" class="bg-green-700 px-4 py-2 rounded">Карточки</button>
+        <button onclick="showProductForm()" class="bg-yellow-500 px-4 py-2 rounded">Товары</button>
+      </div>
+
+      <!-- Форма карточек -->
+      <div id="cardForm" class="space-y-3">
+        <input id="addName" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Имя">
+        <input id="addDesc" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Описание">
+        <input id="addType" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Категория (Медийные, Скамеры и т.д.)">
+        <input id="addImage" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Ссылка на изображение">
+        <input id="addLink1" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Ссылка 1 (Канал)">
+        <input id="addLink2" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Ссылка 2 (ЛС)">
+        <input id="addLink3" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Ссылка 3 (Поделиться)">
+        <button onclick="addCard()" class="bg-green-600 w-full py-2 rounded">Добавить карточку</button>
+      </div>
+
+      <!-- Форма товара -->
+      <div id="productForm" class="space-y-3 hidden">
+        <input id="addProductName" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Название товара">
+        <input id="addProductDesc" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Описание">
+        <input id="addProductImage" class="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Ссылка на изображение">
+        <button onclick="addProduct()" class="bg-yellow-500 w-full py-2 rounded">Добавить товар</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const users = {
-      "50cent": "50cent_krut",
-      "Neizbejniy": "Alexander1009"
-    };
+    let cards = [];
 
-    function login() {
-      const u = document.getElementById('username').value;
-      const p = document.getElementById('password').value;
-      if (users[u] && users[u] === p) {
-        alert('Добро пожаловать, ' + u);
-        document.getElementById('login-modal').classList.add('hidden');
-        document.getElementById('admin-panel').classList.remove('hidden');
+    function renderCards() {
+      const container = document.getElementById('cards');
+      container.innerHTML = '';
+      cards.forEach((card, i) => {
+        const div = document.createElement('div');
+        div.className = 'bg-[#161a24] p-4 rounded-xl shadow-lg card cursor-pointer';
+        div.innerHTML = `
+          <div class="flex items-center space-x-4 mb-2">
+            <img src="${card.img}" class="rounded-full w-16 h-16 border-2 border-green-400">
+            <div>
+              <h2 class="text-lg font-bold text-green-400">${card.name}</h2>
+              <p class="text-sm text-gray-300">${card.type}</p>
+            </div>
+          </div>
+          <button onclick="deleteCard(${i});event.stopPropagation()" class="text-red-500 text-sm">Удалить</button>
+        `;
+        div.onclick = () => openModal(card.name, card.desc, card.link1, card.link2, card.link3, card.img);
+        container.appendChild(div);
+      });
+    }
+
+    function addCard() {
+      const name = document.getElementById('addName').value;
+      const desc = document.getElementById('addDesc').value;
+      const type = document.getElementById('addType').value;
+      const img = document.getElementById('addImage').value || 'https://via.placeholder.com/100';
+      const link1 = document.getElementById('addLink1').value;
+      const link2 = document.getElementById('addLink2').value;
+      const link3 = document.getElementById('addLink3').value;
+      if (!name || !type) return alert("Имя и категория обязательны!");
+      cards.push({ name, desc, type, img, link1, link2, link3 });
+      renderCards();
+      closeAdmin();
+    }
+
+    function addProduct() {
+      const name = document.getElementById('addProductName').value;
+      const desc = document.getElementById('addProductDesc').value;
+      const img = document.getElementById('addProductImage').value || 'https://via.placeholder.com/100';
+      cards.push({ name, desc, type: 'Товары', img, link1: '#', link2: '#', link3: '#' });
+      renderCards();
+      closeAdmin();
+    }
+
+    function deleteCard(index) {
+      cards.splice(index, 1);
+      renderCards();
+    }
+
+    function openModal(name, desc, link1, link2, link3, img) {
+      document.getElementById('modalName').innerText = name;
+      document.getElementById('modalDesc').innerText = desc;
+      document.getElementById('modalLink1').href = link1;
+      document.getElementById('modalLink2').href = link2;
+      document.getElementById('modalLink3').href = link3;
+      document.getElementById('modalImage').src = img;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    function toggleLogin() {
+      document.getElementById('loginPanel').classList.toggle('hidden');
+    }
+
+    function checkLogin() {
+      const login = document.getElementById('login').value;
+      const password = document.getElementById('password').value;
+      if ((login === "cloudwishov" && password === "cloudwishov123") || (login === "Neizbejniy" && password === "Alexander1009")) {
+        document.getElementById('loginPanel').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
       } else {
-        alert('Неверный логин или пароль');
+        alert("Неверные данные");
       }
     }
 
-    function loadCards() {
-      fetch('?get_cards=1')
-        .then(res => res.json())
-        .then(data => {
-          const container = document.getElementById('cards');
-          container.innerHTML = '';
-          data.forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'card bg-gray-900 p-4 rounded-lg shadow-lg';
-            div.innerHTML = `<h3 class="text-xl font-bold">${c.nickname}</h3>
-                             <p class="text-sm text-green-400">Статус: ${c.status}</p>
-                             <p class="mt-2 text-white text-sm">${c.description}</p>
-                             <button onclick="deleteCard(${c.id})" class='mt-2 text-red-400 hover:underline'>Удалить</button>`;
-            container.appendChild(div);
-          });
-        });
+    function closeAdmin() {
+      document.getElementById('adminPanel').classList.add('hidden');
     }
 
-    function deleteCard(id) {
-      fetch('', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `delete_card=1&id=${id}`
-      }).then(() => loadCards());
+    function showCardForm() {
+      document.getElementById('cardForm').classList.remove('hidden');
+      document.getElementById('productForm').classList.add('hidden');
     }
 
-    document.getElementById('addCardForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const form = new FormData(this);
-      form.append('add_card', '1');
-      fetch('', { method: 'POST', body: form })
-        .then(res => res.json())
-        .then(() => {
-          this.reset();
-          loadCards();
-        });
-    });
+    function showProductForm() {
+      document.getElementById('productForm').classList.remove('hidden');
+      document.getElementById('cardForm').classList.add('hidden');
+    }
 
-    loadCards();
+    function filterCards(type) {
+      const filtered = cards.filter(c => c.type.toLowerCase().includes(type.toLowerCase()));
+      const container = document.getElementById('cards');
+      container.innerHTML = '';
+      filtered.forEach((card, i) => {
+        const div = document.createElement('div');
+        div.className = 'bg-[#161a24] p-4 rounded-xl shadow-lg card cursor-pointer';
+        div.innerHTML = `
+          <div class="flex items-center space-x-4 mb-2">
+            <img src="${card.img}" class="rounded-full w-16 h-16 border-2 border-green-400">
+            <div>
+              <h2 class="text-lg font-bold text-green-400">${card.name}</h2>
+              <p class="text-sm text-gray-300">${card.type}</p>
+            </div>
+          </div>
+          <button onclick="deleteCard(${i});event.stopPropagation()" class="text-red-500 text-sm">Удалить</button>
+        `;
+        div.onclick = () => openModal(card.name, card.desc, card.link1, card.link2, card.link3, card.img);
+        container.appendChild(div);
+      });
+    }
+
+    cards = [];
+    renderCards();
   </script>
 </body>
 </html>
