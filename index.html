@@ -1,0 +1,165 @@
+<?php
+// db.php
+$host = "localhost";
+$dbname = "имя_базы";
+$user = "имя_пользователя";
+$pass = "пароль";
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
+} catch (PDOException $e) {
+    die("Ошибка подключения к БД: " . $e->getMessage());
+}
+
+// get_cards.php
+if (isset($_GET['get_cards'])) {
+    require 'db.php';
+    $stmt = $pdo->query("SELECT * FROM cards ORDER BY id DESC");
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    exit;
+}
+
+// add_card.php
+if (isset($_POST['add_card'])) {
+    require 'db.php';
+    $nickname = $_POST['nickname'];
+    $status = $_POST['status'];
+    $description = $_POST['description'];
+    $stmt = $pdo->prepare("INSERT INTO cards (nickname, status, description) VALUES (?, ?, ?)");
+    $stmt->execute([$nickname, $status, $description]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// delete_card.php
+if (isset($_POST['delete_card'])) {
+    require 'db.php';
+    $id = $_POST['id'];
+    $stmt = $pdo->prepare("DELETE FROM cards WHERE id = ?");
+    $stmt->execute([$id]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+?>
+
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Личности Комьюнити</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #0e0e0e;
+      color: #00f2ff;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .neon-text {
+      text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff;
+    }
+    .card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #00f2ff;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-10">
+  <header class="text-3xl neon-text font-bold mb-6">ЛИЧНОСТИ КОМЬЮНИТЕ</header>
+  <nav class="flex space-x-4 mb-6 text-white">
+    <button class="bg-gray-800 px-4 py-2 rounded hover:bg-gray-700">МИДИЙНЫЕ ЛИЧНОСТИ</button>
+    <button class="bg-gray-800 px-4 py-2 rounded hover:bg-gray-700">СРЕДНИЙ ФЕЙМ</button>
+    <button class="bg-blue-800 px-4 py-2 rounded hover:bg-blue-700">МАЛЫЙ ФЕЙМ</button>
+    <button class="bg-gray-800 px-4 py-2 rounded hover:bg-gray-700">СКАМЕРЫ</button>
+  </nav>
+
+  <section id="cards" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full px-4 max-w-6xl"></section>
+
+  <button onclick="document.getElementById('login-modal').classList.remove('hidden')"
+    class="mt-12 bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 transition">Авторизация в панель</button>
+
+  <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div class="bg-gray-900 p-6 rounded shadow-xl w-80">
+      <h2 class="text-lg mb-4 neon-text">Вход в панель</h2>
+      <input type="text" id="username" placeholder="Логин" class="mb-2 w-full p-2 rounded bg-gray-800 text-white">
+      <input type="password" id="password" placeholder="Пароль" class="mb-4 w-full p-2 rounded bg-gray-800 text-white">
+      <button onclick="login()" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Войти</button>
+      <button onclick="document.getElementById('login-modal').classList.add('hidden')"
+        class="w-full mt-2 bg-red-600 text-white py-2 rounded hover:bg-red-700">Отмена</button>
+    </div>
+  </div>
+
+  <div id="admin-panel" class="hidden w-full max-w-xl mt-10 p-6 bg-gray-800 rounded-lg text-white">
+    <h2 class="text-2xl neon-text mb-4">Панель администратора</h2>
+    <form id="addCardForm" class="space-y-4">
+      <input type="text" name="nickname" placeholder="Никнейм" class="w-full p-2 rounded bg-gray-700">
+      <input type="text" name="status" placeholder="Статус (напр. помощник)" class="w-full p-2 rounded bg-gray-700">
+      <textarea name="description" placeholder="Описание" class="w-full p-2 rounded bg-gray-700"></textarea>
+      <button type="submit" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Добавить карточку</button>
+    </form>
+  </div>
+
+  <script>
+    const users = {
+      "50cent": "50cent_krut",
+      "Neizbejniy": "Alexander1009"
+    };
+
+    function login() {
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      if (users[u] && users[u] === p) {
+        alert('Добро пожаловать, ' + u);
+        document.getElementById('login-modal').classList.add('hidden');
+        document.getElementById('admin-panel').classList.remove('hidden');
+      } else {
+        alert('Неверный логин или пароль');
+      }
+    }
+
+    function loadCards() {
+      fetch('?get_cards=1')
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById('cards');
+          container.innerHTML = '';
+          data.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'card bg-gray-900 p-4 rounded-lg shadow-lg';
+            div.innerHTML = `<h3 class="text-xl font-bold">${c.nickname}</h3>
+                             <p class="text-sm text-green-400">Статус: ${c.status}</p>
+                             <p class="mt-2 text-white text-sm">${c.description}</p>
+                             <button onclick="deleteCard(${c.id})" class='mt-2 text-red-400 hover:underline'>Удалить</button>`;
+            container.appendChild(div);
+          });
+        });
+    }
+
+    function deleteCard(id) {
+      fetch('', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `delete_card=1&id=${id}`
+      }).then(() => loadCards());
+    }
+
+    document.getElementById('addCardForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = new FormData(this);
+      form.append('add_card', '1');
+      fetch('', { method: 'POST', body: form })
+        .then(res => res.json())
+        .then(() => {
+          this.reset();
+          loadCards();
+        });
+    });
+
+    loadCards();
+  </script>
+</body>
+</html>
