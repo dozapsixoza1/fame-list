@@ -1,148 +1,87 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Фейм Лист</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAME LIST</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      transition: background 0.3s, color 0.3s;
+      font-family: 'Segoe UI', sans-serif;
     }
-    .light {
-      background: #f0f0f0;
-      color: #000;
-    }
-    header {
-      padding: 10px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 24px;
-      color: #00ff7f;
-    }
-    .admin-login, .admin-panel, .card-form {
-      max-width: 500px;
-      margin: 20px auto;
-      padding: 20px;
-      border-radius: 10px;
-      background: #222;
-    }
-    .light .admin-login, .light .admin-panel, .light .card-form {
-      background: #fff;
-    }
-    input, textarea, select, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
-    }
-    button {
-      background: #00ff7f;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .card-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 16px;
-      padding: 20px;
+    .neon {
+      text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff;
     }
     .card {
-      background: #1e1e1e;
-      border-radius: 16px;
-      padding: 16px;
-      text-align: center;
-      position: relative;
+      transition: transform 0.3s, box-shadow 0.3s;
     }
-    .light .card {
-      background: #fafafa;
-    }
-    .card img {
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    .card .category {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: #00ff7f;
-      color: #000;
-      padding: 4px 8px;
-      font-size: 12px;
-      border-radius: 8px;
-    }
-    .card .actions button {
-      margin: 5px 0;
-    }
-    .remove-btn {
-      background: red;
-      color: white;
-      margin-top: 10px;
-    }
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      padding: 0 20px;
-      align-items: center;
+    .card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px #00f2ff;
     }
   </style>
 </head>
-<body>
-  <header>Фейм Лист</header>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div class="max-w-6xl mx-auto p-4">
+    <h1 class="text-4xl font-bold neon text-center mb-8">FAME LIST</h1>
 
-  <div class="top-bar">
-    <button onclick="toggleTheme()">🌙/☀️</button>
-    <input type="text" id="search" placeholder="Поиск..." oninput="renderCards()">
-  </div>
+    <div class="flex justify-between mb-4">
+      <input type="text" id="search" placeholder="Поиск..." class="p-2 rounded bg-gray-800 w-full max-w-md" oninput="renderCards()">
+      <select id="categoryFilter" class="ml-4 p-2 rounded bg-gray-800" onchange="renderCards()">
+        <option value="">Все категории</option>
+      </select>
+      <button class="ml-4 bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded" onclick="toggleTheme()">🌗</button>
+    </div>
 
-  <div class="admin-login" id="login">
-    <h3>Вход в админ-панель</h3>
-    <input type="password" id="admin-pass" placeholder="Пароль">
-    <button onclick="login()">Войти</button>
-  </div>
+    <div id="cardsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
 
-  <div class="admin-panel" id="admin" style="display:none">
-    <h3>Добавить карточку</h3>
-    <div class="card-form">
-      <input type="text" id="name" placeholder="Имя">
-      <input type="text" id="category" placeholder="Категория (например: МЕДИЙКА)">
-      <textarea id="desc" placeholder="Описание"></textarea>
-      <input type="text" id="link1" placeholder="Ссылка на канал">
-      <input type="text" id="link2" placeholder="Ссылка для ЛС">
-      <input type="text" id="link3" placeholder="Ссылка для Поделиться">
-      <input type="file" id="avatar">
-      <button onclick="addCard()">Добавить</button>
+    <div class="mt-12 text-center">
+      <button onclick="document.getElementById('loginModal').classList.remove('hidden')"
+        class="bg-purple-600 px-6 py-2 rounded hover:bg-purple-700">Вход в админ-панель</button>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 hidden bg-black bg-opacity-70 flex items-center justify-center z-50">
+      <div class="bg-gray-800 p-6 rounded shadow-xl w-80">
+        <h2 class="text-lg mb-4 neon">Вход в панель</h2>
+        <input type="password" id="adminPass" placeholder="Пароль" class="mb-4 w-full p-2 rounded bg-gray-700 text-white">
+        <button onclick="login()" class="w-full bg-green-600 py-2 rounded hover:bg-green-700">Войти</button>
+        <button onclick="document.getElementById('loginModal').classList.add('hidden')"
+          class="w-full mt-2 bg-red-600 py-2 rounded hover:bg-red-700">Отмена</button>
+      </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden mt-10 bg-gray-800 p-6 rounded">
+      <h2 class="text-2xl mb-4 neon">Админ-панель</h2>
+      <form onsubmit="addCard(event)" class="space-y-4">
+        <input required type="text" id="nickname" placeholder="Никнейм" class="w-full p-2 rounded bg-gray-700">
+        <input required type="text" id="status" placeholder="Статус" class="w-full p-2 rounded bg-gray-700">
+        <textarea required id="description" placeholder="Описание" class="w-full p-2 rounded bg-gray-700"></textarea>
+        <input required type="text" id="category" placeholder="Категория (например, СКАМЕР)" class="w-full p-2 rounded bg-gray-700">
+        <input required type="file" id="image" accept="image/*" class="w-full p-2 rounded bg-gray-700">
+        <button type="submit" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Добавить карточку</button>
+      </form>
     </div>
   </div>
 
-  <div class="card-list" id="cards"></div>
-
   <script>
-    const PASS = "cloudwishov6688";
-    let dark = true;
+    const adminPassword = 'cloudwishov6688';
+    let darkTheme = true;
 
     function login() {
-      const pass = document.getElementById('admin-pass').value;
-      if (pass === PASS) {
-        document.getElementById('login').style.display = 'none';
-        document.getElementById('admin').style.display = 'block';
+      const pass = document.getElementById('adminPass').value;
+      if (pass === adminPassword) {
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
       } else {
-        alert("Неверный пароль!");
+        alert('Неверный пароль');
       }
     }
 
     function toggleTheme() {
-      dark = !dark;
-      document.body.classList.toggle('light', !dark);
+      darkTheme = !darkTheme;
+      document.body.className = darkTheme ? 'bg-gray-900 text-white' : 'bg-white text-black';
     }
 
     function getCards() {
@@ -153,25 +92,32 @@
       localStorage.setItem('cards', JSON.stringify(cards));
     }
 
-    function addCard() {
-      const name = document.getElementById('name').value;
-      const category = document.getElementById('category').value;
-      const desc = document.getElementById('desc').value;
-      const link1 = document.getElementById('link1').value;
-      const link2 = document.getElementById('link2').value;
-      const link3 = document.getElementById('link3').value;
-      const file = document.getElementById('avatar').files[0];
+    function renderCards() {
+      const container = document.getElementById('cardsContainer');
+      const filter = document.getElementById('categoryFilter').value.toLowerCase();
+      const search = document.getElementById('search').value.toLowerCase();
+      const cards = getCards().filter(c => {
+        return (!filter || c.category.toLowerCase() === filter) &&
+               (c.nickname.toLowerCase().includes(search) || c.description.toLowerCase().includes(search));
+      });
+      container.innerHTML = cards.map((c, index) => `
+        <div class="card bg-gray-800 rounded-lg p-4 shadow">
+          <div class="text-sm bg-green-500 text-black inline-block px-2 py-1 rounded mb-2">${c.category}</div>
+          <img src="${c.img}" alt="avatar" class="w-24 h-24 object-cover rounded-full mx-auto">
+          <h3 class="text-xl text-center mt-2 font-bold">${c.nickname}</h3>
+          <p class="text-green-400 text-sm text-center">${c.status}</p>
+          <p class="text-sm mt-2">${c.description}</p>
+          <button onclick="deleteCard(${index})" class="text-red-400 text-xs mt-2 hover:underline">Удалить</button>
+        </div>`).join('');
+      updateCategoryFilter();
+    }
 
-      if (!file) return alert("Загрузите изображение");
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const cards = getCards();
-        cards.push({ name, category, desc, link1, link2, link3, img: reader.result });
-        saveCards(cards);
-        renderCards();
-      };
-      reader.readAsDataURL(file);
+    function updateCategoryFilter() {
+      const cards = getCards();
+      const filter = document.getElementById('categoryFilter');
+      const unique = [...new Set(cards.map(c => c.category))];
+      filter.innerHTML = '<option value="">Все категории</option>' +
+        unique.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
     function deleteCard(index) {
@@ -181,34 +127,28 @@
       renderCards();
     }
 
-    function renderCards() {
-      const container = document.getElementById('cards');
-      const query = document.getElementById('search').value.toLowerCase();
-      const cards = getCards();
-      container.innerHTML = cards.map((card, i) => {
-        if (
-          card.name.toLowerCase().includes(query) ||
-          card.category.toLowerCase().includes(query) ||
-          card.desc.toLowerCase().includes(query)
-        ) {
-          return `
-            <div class="card">
-              <div class="category">${card.category}</div>
-              <img src="${card.img}" alt="avatar">
-              <h3>${card.name}</h3>
-              <p>${card.desc}</p>
-              <div class="actions">
-                <button onclick="window.open('${card.link1}')">Канал</button>
-                <button onclick="window.open('${card.link2}')">Написать</button>
-                <button onclick="window.open('${card.link3}')">Поделиться</button>
-              </div>
-              <button class="remove-btn" onclick="deleteCard(${i})">Удалить</button>
-            </div>`;
-        }
-        return '';
-      }).join('');
+    function addCard(e) {
+      e.preventDefault();
+      const reader = new FileReader();
+      const file = document.getElementById('image').files[0];
+      reader.onloadend = () => {
+        const card = {
+          nickname: document.getElementById('nickname').value,
+          status: document.getElementById('status').value,
+          description: document.getElementById('description').value,
+          category: document.getElementById('category').value,
+          img: reader.result
+        };
+        const cards = getCards();
+        cards.unshift(card);
+        saveCards(cards);
+        e.target.reset();
+        renderCards();
+      };
+      reader.readAsDataURL(file);
     }
 
+    // init
     renderCards();
   </script>
 </body>
