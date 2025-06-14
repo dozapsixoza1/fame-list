@@ -3,153 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FAME LIST</title>
+  <title>Fame List</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body {
+      background-color: #0e0e0e;
+      color: #00f2ff;
       font-family: 'Segoe UI', sans-serif;
     }
-    .neon {
+    .neon-text {
       text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff;
     }
     .card {
-      transition: transform 0.3s, box-shadow 0.3s;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .card:hover {
       transform: scale(1.05);
-      box-shadow: 0 0 20px #00f2ff;
+      box-shadow: 0 0 15px #00f2ff;
     }
   </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
-  <div class="max-w-6xl mx-auto p-4">
-    <h1 class="text-4xl font-bold neon text-center mb-8">FAME LIST</h1>
+<body class="min-h-screen flex flex-col items-center py-10">
+  <header class="text-3xl neon-text font-bold mb-6">ЛИЧНОСТИ КОМЬЮНИТЕ</header>
 
-    <div class="flex justify-between mb-4">
-      <input type="text" id="search" placeholder="Поиск..." class="p-2 rounded bg-gray-800 w-full max-w-md" oninput="renderCards()">
-      <select id="categoryFilter" class="ml-4 p-2 rounded bg-gray-800" onchange="renderCards()">
-        <option value="">Все категории</option>
-      </select>
-      <button class="ml-4 bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded" onclick="toggleTheme()">🌗</button>
-    </div>
+  <section id="cards" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full px-4 max-w-6xl"></section>
 
-    <div id="cardsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+  <button onclick="document.getElementById('login-modal').classList.remove('hidden')"
+    class="mt-12 bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 transition">Авторизация в панель</button>
 
-    <div class="mt-12 text-center">
-      <button onclick="document.getElementById('loginModal').classList.remove('hidden')"
-        class="bg-purple-600 px-6 py-2 rounded hover:bg-purple-700">Вход в админ-панель</button>
-    </div>
-
-    <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 hidden bg-black bg-opacity-70 flex items-center justify-center z-50">
-      <div class="bg-gray-800 p-6 rounded shadow-xl w-80">
-        <h2 class="text-lg mb-4 neon">Вход в панель</h2>
-        <input type="password" id="adminPass" placeholder="Пароль" class="mb-4 w-full p-2 rounded bg-gray-700 text-white">
-        <button onclick="login()" class="w-full bg-green-600 py-2 rounded hover:bg-green-700">Войти</button>
-        <button onclick="document.getElementById('loginModal').classList.add('hidden')"
-          class="w-full mt-2 bg-red-600 py-2 rounded hover:bg-red-700">Отмена</button>
-      </div>
-    </div>
-
-    <!-- Admin Panel -->
-    <div id="adminPanel" class="hidden mt-10 bg-gray-800 p-6 rounded">
-      <h2 class="text-2xl mb-4 neon">Админ-панель</h2>
-      <form onsubmit="addCard(event)" class="space-y-4">
-        <input required type="text" id="nickname" placeholder="Никнейм" class="w-full p-2 rounded bg-gray-700">
-        <input required type="text" id="status" placeholder="Статус" class="w-full p-2 rounded bg-gray-700">
-        <textarea required id="description" placeholder="Описание" class="w-full p-2 rounded bg-gray-700"></textarea>
-        <input required type="text" id="category" placeholder="Категория (например, СКАМЕР)" class="w-full p-2 rounded bg-gray-700">
-        <input required type="file" id="image" accept="image/*" class="w-full p-2 rounded bg-gray-700">
-        <button type="submit" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Добавить карточку</button>
-      </form>
+  <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div class="bg-gray-900 p-6 rounded shadow-xl w-80">
+      <h2 class="text-lg mb-4 neon-text">Вход в панель</h2>
+      <input type="text" id="username" placeholder="Логин" class="mb-2 w-full p-2 rounded bg-gray-800 text-white">
+      <input type="password" id="password" placeholder="Пароль" class="mb-4 w-full p-2 rounded bg-gray-800 text-white">
+      <button onclick="login()" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Войти</button>
+      <button onclick="document.getElementById('login-modal').classList.add('hidden')"
+        class="w-full mt-2 bg-red-600 text-white py-2 rounded hover:bg-red-700">Отмена</button>
     </div>
   </div>
 
+  <div id="admin-panel" class="hidden w-full max-w-xl mt-10 p-6 bg-gray-800 rounded-lg text-white">
+    <h2 class="text-2xl neon-text mb-4">Панель администратора</h2>
+    <form id="addCardForm" class="space-y-4">
+      <input type="text" name="nickname" placeholder="Никнейм" class="w-full p-2 rounded bg-gray-700" required>
+      <input type="text" name="status" placeholder="Статус (напр. помощник)" class="w-full p-2 rounded bg-gray-700" required>
+      <textarea name="description" placeholder="Описание" class="w-full p-2 rounded bg-gray-700" required></textarea>
+      <input type="file" name="photo" accept="image/*" class="w-full p-2 rounded bg-gray-700">
+      <button type="submit" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Добавить карточку</button>
+    </form>
+  </div>
+
   <script>
-    const adminPassword = 'cloudwishov6688';
-    let darkTheme = true;
+    const loginInfo = {
+      username: "Evgeniy Nemcev",
+      password: "nemcev2008"
+    };
 
     function login() {
-      const pass = document.getElementById('adminPass').value;
-      if (pass === adminPassword) {
-        document.getElementById('loginModal').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      if (u === loginInfo.username && p === loginInfo.password) {
+        alert('Добро пожаловать, ' + u);
+        document.getElementById('login-modal').classList.add('hidden');
+        document.getElementById('admin-panel').classList.remove('hidden');
       } else {
-        alert('Неверный пароль');
+        alert('Неверный логин или пароль');
       }
     }
 
-    function toggleTheme() {
-      darkTheme = !darkTheme;
-      document.body.className = darkTheme ? 'bg-gray-900 text-white' : 'bg-white text-black';
+    const backendUrl = "https://your-vercel-api.vercel.app"; // заменить на твой Vercel backend
+
+    function loadCards() {
+      fetch(backendUrl + '/get')
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById('cards');
+          container.innerHTML = '';
+          data.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'card bg-gray-900 p-4 rounded-lg shadow-lg';
+            div.innerHTML = `<h3 class="text-xl font-bold mb-1">${c.nickname}</h3>
+                             <p class="text-sm text-green-400">Статус: ${c.status}</p>
+                             <p class="mt-2 text-white text-sm">${c.description}</p>
+                             <img src="${c.image}" class="w-24 h-24 object-cover rounded-full mt-3" />
+                             <button onclick="deleteCard(${c.id})" class='mt-2 text-red-400 hover:underline'>Удалить</button>`;
+            container.appendChild(div);
+          });
+        });
     }
 
-    function getCards() {
-      return JSON.parse(localStorage.getItem('cards') || '[]');
+    function deleteCard(id) {
+      fetch(backendUrl + '/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      }).then(() => loadCards());
     }
 
-    function saveCards(cards) {
-      localStorage.setItem('cards', JSON.stringify(cards));
-    }
-
-    function renderCards() {
-      const container = document.getElementById('cardsContainer');
-      const filter = document.getElementById('categoryFilter').value.toLowerCase();
-      const search = document.getElementById('search').value.toLowerCase();
-      const cards = getCards().filter(c => {
-        return (!filter || c.category.toLowerCase() === filter) &&
-               (c.nickname.toLowerCase().includes(search) || c.description.toLowerCase().includes(search));
-      });
-      container.innerHTML = cards.map((c, index) => `
-        <div class="card bg-gray-800 rounded-lg p-4 shadow">
-          <div class="text-sm bg-green-500 text-black inline-block px-2 py-1 rounded mb-2">${c.category}</div>
-          <img src="${c.img}" alt="avatar" class="w-24 h-24 object-cover rounded-full mx-auto">
-          <h3 class="text-xl text-center mt-2 font-bold">${c.nickname}</h3>
-          <p class="text-green-400 text-sm text-center">${c.status}</p>
-          <p class="text-sm mt-2">${c.description}</p>
-          <button onclick="deleteCard(${index})" class="text-red-400 text-xs mt-2 hover:underline">Удалить</button>
-        </div>`).join('');
-      updateCategoryFilter();
-    }
-
-    function updateCategoryFilter() {
-      const cards = getCards();
-      const filter = document.getElementById('categoryFilter');
-      const unique = [...new Set(cards.map(c => c.category))];
-      filter.innerHTML = '<option value="">Все категории</option>' +
-        unique.map(c => `<option value="${c}">${c}</option>`).join('');
-    }
-
-    function deleteCard(index) {
-      const cards = getCards();
-      cards.splice(index, 1);
-      saveCards(cards);
-      renderCards();
-    }
-
-    function addCard(e) {
+    document.getElementById('addCardForm').addEventListener('submit', function(e) {
       e.preventDefault();
+      const form = new FormData(this);
       const reader = new FileReader();
-      const file = document.getElementById('image').files[0];
-      reader.onloadend = () => {
-        const card = {
-          nickname: document.getElementById('nickname').value,
-          status: document.getElementById('status').value,
-          description: document.getElementById('description').value,
-          category: document.getElementById('category').value,
-          img: reader.result
-        };
-        const cards = getCards();
-        cards.unshift(card);
-        saveCards(cards);
-        e.target.reset();
-        renderCards();
-      };
-      reader.readAsDataURL(file);
-    }
+      const file = form.get('photo');
 
-    // init
-    renderCards();
+      reader.onloadend = function() {
+        fetch(backendUrl + '/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nickname: form.get('nickname'),
+            status: form.get('status'),
+            description: form.get('description'),
+            image: reader.result || ''
+          })
+        }).then(() => {
+          document.getElementById('addCardForm').reset();
+          loadCards();
+        });
+      };
+
+      if (file && file.size > 0) reader.readAsDataURL(file);
+      else reader.onloadend();
+    });
+
+    loadCards();
   </script>
 </body>
 </html>
