@@ -82,22 +82,22 @@
 
 <script>
 const ADMIN_PASS = 'nemcev2008';
-let isDark = true;
 let currentUser = null;
+let allCards = [];
 
 function toggleTheme() {
-  isDark = !isDark;
-  document.body.className = isDark ? 'bg-gray-900 text-white' : 'bg-white text-black';
+  document.body.classList.toggle('bg-white');
+  document.body.classList.toggle('text-black');
+  document.body.classList.toggle('bg-gray-900');
+  document.body.classList.toggle('text-white');
 }
 
 function showAdminLogin() {
   document.getElementById('adminLoginModal').classList.remove('hidden');
 }
-
 function showUserLogin() {
   document.getElementById('userLoginModal').classList.remove('hidden');
 }
-
 function hideModal(id) {
   document.getElementById(id).classList.add('hidden');
 }
@@ -117,79 +117,54 @@ function adminLogin() {
 function userLogin() {
   const nick = document.getElementById('userNick').value;
   const pass = document.getElementById('userPass').value;
-  const users = JSON.parse(localStorage.getItem('users') || '{}');
-  if (users[nick] && users[nick] === pass) {
-    currentUser = nick;
-    document.getElementById('authInfo').textContent = `Вы вошли как ${nick}`;
-    document.getElementById('authInfo').classList.remove('hidden');
-    document.getElementById('searchArea').classList.remove('hidden');
-    renderCards();
-    hideModal('userLoginModal');
-  } else {
-    alert('Неверные данные');
-  }
+  // логика авторизации — пока пропущена
+  currentUser = nick;
+  document.getElementById('authInfo').textContent = \`Вы вошли как \${nick}\`;
+  document.getElementById('authInfo').classList.remove('hidden');
+  document.getElementById('searchArea').classList.remove('hidden');
+  renderCards();
+  hideModal('userLoginModal');
 }
 
 function registerUser() {
-  const nick = document.getElementById('userNick').value;
-  const pass = document.getElementById('userPass').value;
-  const users = JSON.parse(localStorage.getItem('users') || '{}');
-  if (!users[nick]) {
-    users[nick] = pass;
-    localStorage.setItem('users', JSON.stringify(users));
-    alert('Пользователь зарегистрирован');
-  } else {
-    alert('Пользователь уже существует');
-  }
+  alert('Регистрация работает в этой версии только визуально (без базы)');
 }
 
-function getCards() {
-  return JSON.parse(localStorage.getItem('cards') || '[]');
-}
-
-function saveCards(cards) {
-  localStorage.setItem('cards', JSON.stringify(cards));
+async function fetchCards() {
+  const res = await fetch('/cards');
+  allCards = await res.json();
+  renderCards();
 }
 
 function renderCards() {
-  if (!currentUser) return;
   const container = document.getElementById('cardsContainer');
   const filter = document.getElementById('categoryFilter').value.toLowerCase();
   const search = document.getElementById('search').value.toLowerCase();
-  const cards = getCards().filter(c => (!filter || c.category.toLowerCase() === filter) &&
+  const cards = allCards.filter(c => (!filter || c.category.toLowerCase() === filter) &&
     (c.nickname.toLowerCase().includes(search) || c.description.toLowerCase().includes(search)));
-  container.innerHTML = cards.map((c, i) => `
+  container.innerHTML = cards.map((c) => \`
     <div class="card bg-gray-800 rounded-lg p-4 shadow">
-      <div class="text-sm bg-green-500 text-black inline-block px-2 py-1 rounded mb-2">${c.category}</div>
-      <img src="${c.img}" alt="avatar" class="w-24 h-24 object-cover rounded-full mx-auto">
-      <h3 class="text-xl text-center mt-2 font-bold">${c.nickname}</h3>
-      <p class="text-green-400 text-sm text-center">${c.status}</p>
-      <p class="text-sm mt-2">${c.description}</p>
-      <button onclick="deleteCard(${i})" class="text-red-400 text-xs mt-2 hover:underline">Удалить</button>
-    </div>`).join('');
+      <div class="text-sm bg-green-500 text-black inline-block px-2 py-1 rounded mb-2">\${c.category}</div>
+      <img src="\${c.img}" alt="avatar" class="w-24 h-24 object-cover rounded-full mx-auto">
+      <h3 class="text-xl text-center mt-2 font-bold">\${c.nickname}</h3>
+      <p class="text-green-400 text-sm text-center">\${c.status}</p>
+      <p class="text-sm mt-2">\${c.description}</p>
+    </div>\`).join('');
   updateCategoryFilter();
 }
 
 function updateCategoryFilter() {
-  const cards = getCards();
   const filter = document.getElementById('categoryFilter');
-  const unique = [...new Set(cards.map(c => c.category))];
+  const unique = [...new Set(allCards.map(c => c.category))];
   filter.innerHTML = '<option value="">Все категории</option>' +
-    unique.map(c => `<option value="${c}">${c}</option>`).join('');
-}
-
-function deleteCard(index) {
-  const cards = getCards();
-  cards.splice(index, 1);
-  saveCards(cards);
-  renderCards();
+    unique.map(c => \`<option value="\${c}">\${c}</option>\`).join('');
 }
 
 function addCard(e) {
   e.preventDefault();
   const file = document.getElementById('image').files[0];
   const reader = new FileReader();
-  reader.onloadend = () => {
+  reader.onloadend = async () => {
     const card = {
       nickname: document.getElementById('nickname').value,
       status: document.getElementById('status').value,
@@ -197,14 +172,18 @@ function addCard(e) {
       category: document.getElementById('category').value,
       img: reader.result
     };
-    const cards = getCards();
-    cards.unshift(card);
-    saveCards(cards);
-    renderCards();
+    await fetch('/cards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(card)
+    });
+    fetchCards();
     e.target.reset();
   };
   reader.readAsDataURL(file);
 }
+
+fetchCards();
 </script>
 </body>
 </html>
