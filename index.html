@@ -6,45 +6,26 @@
   <title>FAME LIST</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-    }
-    .neon {
-      text-shadow: 0 0 6px #00f2ff, 0 0 10px #00f2ff;
-    }
-    .card {
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-    .card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 20px #00f2ff;
-    }
+    body { font-family: 'Segoe UI', sans-serif; }
+    .neon { text-shadow: 0 0 6px #00f2ff, 0 0 10px #00f2ff; }
+    .card { transition: transform 0.3s, box-shadow 0.3s; }
+    .card:hover { transform: scale(1.05); box-shadow: 0 0 20px #00f2ff; }
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
   <div class="max-w-6xl mx-auto p-4">
     <h1 class="text-4xl font-bold neon text-center mb-8">FAME LIST</h1>
-
     <div class="flex justify-between items-center mb-6">
-      <div class="flex space-x-4">
-        <button onclick="showUserLogin()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Авторизация в лист</button>
-        <button onclick="showAdminLogin()" class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-700">Авторизация админки</button>
-      </div>
+      <button onclick="showAdminLogin()" class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-700">Админка</button>
       <button class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded" onclick="toggleTheme()">🌗</button>
     </div>
-
-    <div id="authInfo" class="text-sm text-green-400 mb-4 hidden"></div>
-
-    <div id="searchArea" class="hidden mb-4">
+    <div class="mb-4 flex gap-4">
       <input type="text" id="search" placeholder="Поиск..." class="p-2 rounded bg-gray-800 w-full max-w-md" oninput="renderCards()">
-      <select id="categoryFilter" class="ml-4 p-2 rounded bg-gray-800" onchange="renderCards()">
+      <select id="categoryFilter" class="p-2 rounded bg-gray-800" onchange="renderCards()">
         <option value="">Все категории</option>
       </select>
     </div>
-
     <div id="cardsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
-
-    <!-- Admin Login Modal -->
     <div id="adminLoginModal" class="fixed inset-0 hidden bg-black bg-opacity-70 flex items-center justify-center z-50">
       <div class="bg-gray-800 p-6 rounded shadow-xl w-80">
         <h2 class="text-lg mb-4 neon">Вход в админку</h2>
@@ -53,36 +34,20 @@
         <button onclick="hideModal('adminLoginModal')" class="w-full mt-2 bg-red-600 py-2 rounded hover:bg-red-700">Отмена</button>
       </div>
     </div>
-
-    <!-- User Login Modal -->
-    <div id="userLoginModal" class="fixed inset-0 hidden bg-black bg-opacity-70 flex items-center justify-center z-50">
-      <div class="bg-gray-800 p-6 rounded shadow-xl w-80">
-        <h2 class="text-lg mb-4 neon">Вход в лист</h2>
-        <input type="text" id="userNick" placeholder="Никнейм" class="mb-2 w-full p-2 rounded bg-gray-700 text-white">
-        <input type="password" id="userPass" placeholder="Пароль" class="mb-4 w-full p-2 rounded bg-gray-700 text-white">
-        <button onclick="userLogin()" class="w-full bg-blue-600 py-2 rounded hover:bg-blue-700">Войти</button>
-        <button onclick="registerUser()" class="w-full mt-2 bg-purple-600 py-2 rounded hover:bg-purple-700">Регистрация</button>
-        <button onclick="hideModal('userLoginModal')" class="w-full mt-2 bg-red-600 py-2 rounded hover:bg-red-700">Отмена</button>
-      </div>
-    </div>
-
-    <!-- Admin Panel -->
     <div id="adminPanel" class="hidden mt-10 bg-gray-800 p-6 rounded">
-      <h2 class="text-2xl mb-4 neon">Админ-панель</h2>
+      <h2 class="text-2xl mb-4 neon">Добавить карточку</h2>
       <form onsubmit="addCard(event)" class="space-y-4">
         <input required type="text" id="nickname" placeholder="Никнейм" class="w-full p-2 rounded bg-gray-700">
         <input required type="text" id="status" placeholder="Статус" class="w-full p-2 rounded bg-gray-700">
         <textarea required id="description" placeholder="Описание" class="w-full p-2 rounded bg-gray-700"></textarea>
         <input required type="text" id="category" placeholder="Категория" class="w-full p-2 rounded bg-gray-700">
         <input required type="file" id="image" accept="image/*" class="w-full p-2 rounded bg-gray-700">
-        <button type="submit" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Добавить карточку</button>
+        <button type="submit" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Добавить</button>
       </form>
     </div>
   </div>
-
 <script>
 const ADMIN_PASS = 'nemcev2008';
-let currentUser = null;
 let allCards = [];
 
 function toggleTheme() {
@@ -91,58 +56,35 @@ function toggleTheme() {
   document.body.classList.toggle('bg-gray-900');
   document.body.classList.toggle('text-white');
 }
-
 function showAdminLogin() {
   document.getElementById('adminLoginModal').classList.remove('hidden');
-}
-function showUserLogin() {
-  document.getElementById('userLoginModal').classList.remove('hidden');
 }
 function hideModal(id) {
   document.getElementById(id).classList.add('hidden');
 }
-
 function adminLogin() {
   const pass = document.getElementById('adminPass').value;
   if (pass === ADMIN_PASS) {
     hideModal('adminLoginModal');
     document.getElementById('adminPanel').classList.remove('hidden');
-    document.getElementById('authInfo').textContent = 'Вы вошли как админ';
-    document.getElementById('authInfo').classList.remove('hidden');
   } else {
     alert('Неверный пароль');
   }
 }
-
-function userLogin() {
-  const nick = document.getElementById('userNick').value;
-  const pass = document.getElementById('userPass').value;
-  // логика авторизации — пока пропущена
-  currentUser = nick;
-  document.getElementById('authInfo').textContent = \`Вы вошли как \${nick}\`;
-  document.getElementById('authInfo').classList.remove('hidden');
-  document.getElementById('searchArea').classList.remove('hidden');
-  renderCards();
-  hideModal('userLoginModal');
-}
-
-function registerUser() {
-  alert('Регистрация работает в этой версии только визуально (без базы)');
-}
-
 async function fetchCards() {
-  const res = await fetch('/cards');
+  const res = await fetch('/api/cards');
   allCards = await res.json();
   renderCards();
 }
-
 function renderCards() {
-  const container = document.getElementById('cardsContainer');
-  const filter = document.getElementById('categoryFilter').value.toLowerCase();
-  const search = document.getElementById('search').value.toLowerCase();
-  const cards = allCards.filter(c => (!filter || c.category.toLowerCase() === filter) &&
-    (c.nickname.toLowerCase().includes(search) || c.description.toLowerCase().includes(search)));
-  container.innerHTML = cards.map((c) => \`
+  const container = document.getElementById("cardsContainer");
+  const filter = document.getElementById("categoryFilter").value.toLowerCase();
+  const search = document.getElementById("search").value.toLowerCase();
+  const cards = allCards.filter(c =>
+    (!filter || c.category.toLowerCase() === filter) &&
+    (c.nickname.toLowerCase().includes(search) || c.description.toLowerCase().includes(search))
+  );
+  container.innerHTML = cards.map(c => \`
     <div class="card bg-gray-800 rounded-lg p-4 shadow">
       <div class="text-sm bg-green-500 text-black inline-block px-2 py-1 rounded mb-2">\${c.category}</div>
       <img src="\${c.img}" alt="avatar" class="w-24 h-24 object-cover rounded-full mx-auto">
@@ -152,14 +94,12 @@ function renderCards() {
     </div>\`).join('');
   updateCategoryFilter();
 }
-
 function updateCategoryFilter() {
-  const filter = document.getElementById('categoryFilter');
+  const filter = document.getElementById("categoryFilter");
   const unique = [...new Set(allCards.map(c => c.category))];
   filter.innerHTML = '<option value="">Все категории</option>' +
     unique.map(c => \`<option value="\${c}">\${c}</option>\`).join('');
 }
-
 function addCard(e) {
   e.preventDefault();
   const file = document.getElementById('image').files[0];
@@ -172,7 +112,7 @@ function addCard(e) {
       category: document.getElementById('category').value,
       img: reader.result
     };
-    await fetch('/cards', {
+    await fetch('/api/cards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(card)
@@ -182,7 +122,6 @@ function addCard(e) {
   };
   reader.readAsDataURL(file);
 }
-
 fetchCards();
 </script>
 </body>
